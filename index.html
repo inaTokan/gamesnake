@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Snake</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+
+        h1 {
+            margin-top: 20px;
+        }
+
+        #gameCanvas {
+            background-color: #000;
+            display: block;
+            margin: 20px auto;
+            border: 2px solid #fff;
+        }
+
+        #score {
+            font-size: 24px;
+            margin-top: 10px;
+        }
+
+        #gameOverMenu {
+            display: none;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            color: white;
+            background-color: #333;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #555;
+        }
+    </style>
+</head>
+<body>
+    <h1>Game Snake</h1>
+    <p id="score">Skor: 0</p>
+    <canvas id="gameCanvas" width="400" height="400"></canvas>
+
+    <div id="gameOverMenu">
+        <h2>Game Over!</h2>
+        <p id="finalScore"></p>
+        <button onclick="restartGame()">Play Again</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+
+        const box = 20; // Ukuran setiap kotak dalam permainan
+        const canvasSize = canvas.width / box;
+
+        let snake, direction, food, score, game;
+
+        // Fungsi memulai ulang permainan
+        function restartGame() {
+            snake = [{ x: 10, y: 10 }]; // Posisi awal ular
+            direction = "RIGHT"; // Arah awal ular
+            food = { 
+                x: Math.floor(Math.random() * canvasSize), 
+                y: Math.floor(Math.random() * canvasSize) 
+            };
+            score = 0;
+            document.getElementById("score").innerText = `Skor: ${score}`;
+            document.getElementById("gameOverMenu").style.display = "none";
+            game = setInterval(gameLoop, 200); // Jalankan permainan lebih lambat
+        }
+
+        // Event Listener untuk kontrol ular
+        document.addEventListener("keydown", changeDirection);
+
+        function changeDirection(event) {
+            const key = event.key;
+            if (key === "ArrowUp" && direction !== "DOWN") direction = "UP";
+            else if (key === "ArrowDown" && direction !== "UP") direction = "DOWN";
+            else if (key === "ArrowLeft" && direction !== "RIGHT") direction = "LEFT";
+            else if (key === "ArrowRight" && direction !== "LEFT") direction = "RIGHT";
+        }
+
+        // Fungsi menggambar ular dengan wajah
+        function drawSnake() {
+            snake.forEach((part, index) => {
+                // Jika ini adalah bagian kepala ular
+                if (index === 0) {
+                    ctx.fillStyle = "red"; // Warna tubuh ular merah
+                    ctx.fillRect(part.x * box, part.y * box, box, box);
+                    drawSnakeFace(part.x * box, part.y * box); // Menambahkan wajah pada kepala ular
+                } else {
+                    ctx.fillStyle = "red"; // Warna tubuh ular merah
+                    ctx.fillRect(part.x * box, part.y * box, box, box);
+                }
+            });
+        }
+
+        // Fungsi menggambar wajah pada kepala ular
+        function drawSnakeFace(x, y) {
+            // Menggambar mata kiri
+            ctx.fillStyle = "white";
+            ctx.beginPath();
+            ctx.arc(x + 5, y + 5, 3, 0, 2 * Math.PI);
+            ctx.fill();
+
+            // Menggambar mata kanan
+            ctx.beginPath();
+            ctx.arc(x + 15, y + 5, 3, 0, 2 * Math.PI);
+            ctx.fill();
+
+            // Menggambar pupil mata kiri
+            ctx.fillStyle = "black";
+            ctx.beginPath();
+            ctx.arc(x + 5, y + 5, 1.5, 0, 2 * Math.PI);
+            ctx.fill();
+
+            // Menggambar pupil mata kanan
+            ctx.beginPath();
+            ctx.arc(x + 15, y + 5, 1.5, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+
+        // Fungsi menggambar makanan
+        function drawFood() {
+            ctx.fillStyle = "green"; // Warna makanan hijau
+            ctx.fillRect(food.x * box, food.y * box, box, box);
+        }
+
+        // Fungsi menggerakkan ular
+        function moveSnake() {
+            const head = { ...snake[0] }; // Posisi kepala ular
+            if (direction === "UP") head.y -= 1;
+            else if (direction === "DOWN") head.y += 1;
+            else if (direction === "LEFT") head.x -= 1;
+            else if (direction === "RIGHT") head.x += 1;
+
+            // Tambahkan kepala baru ke depan
+            snake.unshift(head);
+
+            // Cek jika ular memakan makanan
+            if (head.x === food.x && head.y === food.y) {
+                score++;
+                document.getElementById("score").innerText = `Skor: ${score}`;
+                food = { 
+                    x: Math.floor(Math.random() * canvasSize), 
+                    y: Math.floor(Math.random() * canvasSize) 
+                };
+            } else {
+                snake.pop(); // Hapus ekor jika tidak makan
+            }
+        }
+
+        // Fungsi cek tabrakan
+        function checkCollision() {
+            const head = snake[0];
+            // Tabrakan dengan dinding
+            if (head.x < 0 || head.x >= canvasSize || head.y < 0 || head.y >= canvasSize) {
+                return true;
+            }
+            // Tabrakan dengan tubuh sendiri
+            for (let i = 1; i < snake.length; i++) {
+                if (head.x === snake[i].x && head.y === snake[i].y) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // Loop utama permainan
+        function gameLoop() {
+            if (checkCollision()) {
+                clearInterval(game);
+                document.getElementById("finalScore").innerText = `Skor Akhir Anda: ${score}`;
+                document.getElementById("gameOverMenu").style.display = "block";
+            } else {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                drawFood();
+                moveSnake();
+                drawSnake();
+            }
+        }
+
+        // Memulai permainan pertama kali
+        restartGame();
+    </script>
+</body>
+</html>
